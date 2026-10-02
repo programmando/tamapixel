@@ -1,0 +1,7 @@
+# Impostazioni locali di Claude: restano sul PC, non vanno online
+.claude/
+
+# File che Windows e Python creano da soli
+Thumbs.db
+desktop.ini
+__pycache__/

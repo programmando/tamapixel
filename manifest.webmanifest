@@ -1,0 +1,12 @@
+{
+  "name": "TamaPixel",
+  "short_name": "TamaPixel",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#2a1f3d",
+  "theme_color": "#2a1f3d",
+  "icons": [
+    { "src": "icon-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

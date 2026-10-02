@@ -1,0 +1,1392 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>TamaPixel</title>
+<meta name="description" content="Un cucciolo virtuale in pixel, come quelli degli anni '90.">
+
+<!-- Queste righe trasformano la pagina in una "vera app" quando la aggiungi alla Home dell'iPhone -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TamaPixel">
+<meta name="theme-color" content="#1b1430">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg-1: #33255a;
+    --bg-2: #150f26;
+    --panel: #251b40;
+    --panel-2: #3a2d66;
+    --line: rgba(255, 255, 255, .08);
+    --text: #f7f2ff;
+    --muted: #b6a9d4;
+    --accent: #ffd84d;
+    --danger: #ff6b81;
+    --shell-1: #ff9ccb;
+    --shell-2: #ef5d9c;
+    --shell-3: #b8346f;
+    --pixel: "Silkscreen", ui-monospace, Menlo, monospace;
+    --dev: min(84vw, 330px, 47vh);
+  }
+  @supports (height: 1dvh) { :root { --dev: min(84vw, 330px, 47dvh); } }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  button { font-family: inherit; }
+  html, body { margin: 0; min-height: 100%; background: var(--bg-2); }
+  body {
+    color: var(--text);
+    font: 16px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, "Segoe UI", Roboto, sans-serif;
+    background:
+      radial-gradient(1.5px 1.5px at 12% 18%, rgba(255,255,255,.55), transparent 60%),
+      radial-gradient(1.5px 1.5px at 84% 10%, rgba(255,255,255,.45), transparent 60%),
+      radial-gradient(1px 1px at 70% 74%, rgba(255,255,255,.35), transparent 60%),
+      radial-gradient(1px 1px at 20% 84%, rgba(255,255,255,.3), transparent 60%),
+      radial-gradient(1.5px 1.5px at 92% 52%, rgba(255,255,255,.35), transparent 60%),
+      radial-gradient(1px 1px at 6% 50%, rgba(255,255,255,.3), transparent 60%),
+      radial-gradient(120% 75% at 50% 0%, var(--bg-1), var(--bg-2) 72%);
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+    overscroll-behavior: none;
+    overflow-x: hidden;
+  }
+
+  #app {
+    min-height: 100vh; min-height: 100dvh;
+    max-width: 460px; margin: 0 auto;
+    display: flex; flex-direction: column; align-items: center;
+    padding: calc(env(safe-area-inset-top) + 10px) 16px calc(env(safe-area-inset-bottom) + 16px);
+  }
+  .stage { flex: 1; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 8px 0; }
+
+  /* ---------- barra in alto ---------- */
+  .bar { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .round {
+    width: 44px; height: 44px; flex: none; border: 0; border-radius: 50%;
+    background: var(--panel); color: var(--text); font: 600 18px/1 system-ui, sans-serif;
+    box-shadow: inset 0 0 0 1px var(--line); cursor: pointer; touch-action: manipulation;
+  }
+  .round:active { transform: scale(.94); }
+  .mid { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .chip {
+    border: 0; border-radius: 999px; padding: 9px 12px; cursor: pointer;
+    background: var(--panel); color: var(--accent); font: 12px var(--pixel);
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .tag { font: 12px var(--pixel); color: var(--accent); white-space: nowrap; }
+
+  /* ---------- il guscio a forma di uovo ---------- */
+  .device { position: relative; width: var(--dev); margin-top: calc(var(--dev) * .06); flex: none; }
+  .ring {
+    position: absolute; left: 50%; top: calc(var(--dev) * -.075);
+    width: calc(var(--dev) * .17); height: calc(var(--dev) * .17);
+    transform: translateX(-50%); border-radius: 50%;
+    border: calc(var(--dev) * .027) solid #d9d5e4;
+    box-shadow: 0 2px 3px rgba(0,0,0,.45), inset 0 1px 2px rgba(0,0,0,.35);
+  }
+  .shell {
+    position: relative; z-index: 1; width: 100%; aspect-ratio: .86;
+    border-radius: 50% 50% 50% 50% / 56% 56% 44% 44%;
+    background:
+      radial-gradient(55% 34% at 33% 15%, rgba(255,255,255,.55), rgba(255,255,255,0) 72%),
+      radial-gradient(circle, rgba(255,255,255,.2) 0 1.2px, transparent 1.7px) 0 0 / 14px 14px,
+      linear-gradient(165deg, var(--shell-1), var(--shell-2) 55%, var(--shell-3));
+    box-shadow:
+      inset 0 -16px 30px rgba(0,0,0,.28),
+      inset 0 10px 18px rgba(255,255,255,.35),
+      0 24px 40px rgba(0,0,0,.5);
+    display: flex; flex-direction: column; align-items: center;
+    transition: background .4s;
+  }
+  .brand {
+    margin-top: 11%;
+    font: calc(var(--dev) * .05)/1 var(--pixel); letter-spacing: .1em;
+    color: #fff; text-shadow: 0 2px 0 rgba(0,0,0,.2);
+  }
+  .brand b { font-weight: normal; color: var(--accent); }
+  .face {
+    margin-top: 3.5%; width: 74%; padding: 4.5%;
+    border-radius: 26% / 30%;
+    background: linear-gradient(180deg, rgba(255,255,255,.42), rgba(255,255,255,.08));
+    box-shadow: inset 0 2px 8px rgba(0,0,0,.22), 0 1px 0 rgba(255,255,255,.45);
+  }
+  .bezel {
+    padding: 5%; border-radius: 12px; background: #3b3449;
+    box-shadow: inset 0 3px 8px rgba(0,0,0,.6), 0 1px 0 rgba(255,255,255,.3);
+  }
+  #lcd {
+    display: block; width: 100%; aspect-ratio: 33.2 / 25.8; border-radius: 6px;
+    touch-action: manipulation; cursor: pointer;
+  }
+  .buttons { position: relative; width: 62%; aspect-ratio: 3.4; margin-top: 5%; }
+  .hw {
+    position: absolute; width: 23%; aspect-ratio: 1; padding: 0; border: 0; border-radius: 50%;
+    cursor: pointer; touch-action: manipulation;
+    background: radial-gradient(circle at 38% 30%, #fff, #f3eff8 38%, #c8c1d6);
+    box-shadow: 0 5px 0 rgba(0,0,0,.28), 0 8px 12px rgba(0,0,0,.25), inset 0 -3px 5px rgba(0,0,0,.15);
+    transition: transform .06s, box-shadow .06s;
+  }
+  .hw.down {
+    transform: translateY(4px);
+    box-shadow: 0 1px 0 rgba(0,0,0,.28), 0 2px 4px rgba(0,0,0,.25), inset 0 -2px 4px rgba(0,0,0,.15);
+  }
+  .hw[data-btn="A"] { left: 2%; top: 0; }
+  .hw[data-btn="B"] { left: 38.5%; top: 30%; }
+  .hw[data-btn="C"] { right: 2%; top: 0; }
+  .hw i {
+    position: absolute; left: 50%; top: 100%; transform: translate(-50%, 40%);
+    font: normal calc(var(--dev) * .036)/1 var(--pixel); color: rgba(255,255,255,.9);
+    text-shadow: 0 1px 0 rgba(0,0,0,.2); pointer-events: none;
+  }
+
+  /* ---------- fumetto con i messaggi ---------- */
+  .bubble {
+    position: relative; width: 100%; padding: 12px 16px 14px; border-radius: 18px;
+    background: var(--panel); box-shadow: inset 0 0 0 1px var(--line), 0 10px 24px rgba(0,0,0,.25);
+  }
+  .bubble::before {
+    content: ""; position: absolute; left: 50%; top: -7px; width: 14px; height: 14px;
+    background: var(--panel); transform: translateX(-50%) rotate(45deg); border-radius: 3px 0 0 0;
+    box-shadow: -1px -1px 0 var(--line);
+  }
+  .who { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .who b { font: normal 14px var(--pixel); color: var(--accent); white-space: nowrap; }
+  .who span { font: 11px var(--pixel); color: var(--muted); text-align: right; }
+  #say { margin: 6px 0 0; font-size: 15px; line-height: 1.4; min-height: 2.8em; }
+
+  /* ---------- schermata "nuovo uovo" ---------- */
+  .sheet {
+    position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 16px;
+    background: rgba(10, 6, 20, .82);
+    -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  }
+  .sheet[hidden] { display: none; }
+  .card {
+    width: min(100%, 360px); padding: 24px 20px 20px; border-radius: 24px; text-align: center;
+    background: var(--panel); box-shadow: inset 0 0 0 1px var(--line), 0 30px 60px rgba(0,0,0,.5);
+  }
+  .card canvas { width: 96px; height: 96px; border-radius: 18px; image-rendering: pixelated; }
+  .card h1 { margin: 14px 0 4px; font: normal 20px var(--pixel); color: var(--accent); }
+  .card p { margin: 0 0 14px; color: var(--muted); font-size: 15px; }
+  .field {
+    width: 100%; padding: 12px 14px; border: 0; border-radius: 12px; outline: none;
+    font: 18px var(--pixel); text-align: center; background: #c9d2aa; color: #26301d;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,.25);
+    -webkit-user-select: text; user-select: text;
+  }
+  .swatches { display: flex; gap: 10px; justify-content: center; margin: 16px 0 18px; }
+  .sw { width: 34px; height: 34px; border: 0; border-radius: 50%; cursor: pointer; box-shadow: inset 0 -3px 0 rgba(0,0,0,.2); }
+  .sw[aria-pressed="true"] { outline: 3px solid #fff; outline-offset: 2px; }
+  .primary {
+    width: 100%; padding: 14px; border: 0; border-radius: 14px; cursor: pointer;
+    background: var(--accent); color: #3a2a00; font: normal 15px var(--pixel);
+    box-shadow: 0 4px 0 #b8941a;
+  }
+  .primary:active { transform: translateY(3px); box-shadow: 0 1px 0 #b8941a; }
+  .ghost { width: 100%; margin-top: 8px; padding: 10px; border: 0; background: none; color: var(--muted); font-size: 15px; cursor: pointer; }
+
+  /* ---------- finestre aiuto e impostazioni ---------- */
+  dialog {
+    width: min(92vw, 440px); max-height: min(86vh, 760px); padding: 0; border: 0; border-radius: 24px;
+    background: var(--panel); color: var(--text); box-shadow: 0 30px 80px rgba(0,0,0,.6); overflow: hidden;
+  }
+  dialog::backdrop { background: rgba(10, 6, 20, .72); }
+  .dlg { max-height: min(86vh, 760px); overflow-y: auto; padding: 22px 20px 20px; }
+  .dlg h2 { margin: 0 0 12px; font: normal 20px var(--pixel); color: var(--accent); }
+  .dlg h3 { margin: 20px 0 6px; font-size: 16px; }
+  .dlg p { margin: 0 0 8px; color: #ded5f0; font-size: 15px; line-height: 1.5; }
+  .legend { display: grid; grid-template-columns: 40px 1fr; gap: 10px 12px; align-items: center; margin: 12px 0 4px; }
+  .legend canvas { width: 40px; height: 40px; border-radius: 9px; image-rendering: pixelated; }
+  .legend b { display: block; font-size: 15px; }
+  .legend span { color: var(--muted); font-size: 14px; }
+  .end { position: sticky; bottom: -20px; margin: 0 -20px -20px; padding: 16px 20px 20px; background: linear-gradient(rgba(37,27,64,0), var(--panel) 35%); }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .row.col { flex-direction: column; align-items: stretch; }
+  .row .field { width: 55%; font-size: 16px; padding: 8px 10px; }
+  .row .swatches { margin: 0; gap: 8px; }
+  .row .sw { width: 28px; height: 28px; }
+  .switch { width: 22px; height: 22px; accent-color: var(--accent); }
+  .seg { display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: var(--bg-2); }
+  .seg button { flex: 1; padding: 9px 6px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); font: 12px var(--pixel); cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--panel-2); color: var(--text); }
+  .note { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+  .danger {
+    width: 100%; margin: 18px 0 0; padding: 12px; border-radius: 14px; cursor: pointer;
+    border: 1px solid rgba(255,107,129,.4); background: transparent; color: var(--danger); font-size: 15px;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <nav class="bar">
+    <button class="round" id="helpBtn" aria-label="Come si gioca">?</button>
+    <div class="mid">
+      <button class="chip" id="installBtn" hidden>📲 Installa</button>
+      <span class="tag" id="speedTag"></span>
+    </div>
+    <button class="round" id="setBtn" aria-label="Impostazioni">⚙︎</button>
+  </nav>
+
+  <main class="stage">
+  <div class="device">
+    <div class="ring" aria-hidden="true"></div>
+    <div class="shell">
+      <div class="brand">TAMA<b>PIXEL</b></div>
+      <div class="face"><div class="bezel"><canvas id="lcd" aria-label="Schermo del TamaPixel"></canvas></div></div>
+      <div class="buttons">
+        <button class="hw" data-btn="A" aria-label="Tasto A: scorri le icone"><i>A</i></button>
+        <button class="hw" data-btn="B" aria-label="Tasto B: conferma"><i>B</i></button>
+        <button class="hw" data-btn="C" aria-label="Tasto C: annulla"><i>C</i></button>
+      </div>
+    </div>
+  </div>
+
+  <section class="bubble" aria-live="polite">
+    <div class="who"><b id="petName">TamaPixel</b><span id="petInfo"></span></div>
+    <p id="say"></p>
+  </section>
+  </main>
+</div>
+
+<!-- Schermata iniziale: nome del cucciolo -->
+<div class="sheet" id="start" hidden>
+  <div class="card">
+    <canvas id="eggArt" width="16" height="16"></canvas>
+    <h1>Hai trovato un uovo!</h1>
+    <p>Dagli un nome: d'ora in poi è compito tuo.</p>
+    <input class="field" id="nameIn" type="text" maxlength="8" placeholder="Pixel" autocomplete="off" autocapitalize="words" enterkeyhint="go">
+    <div class="swatches" id="startSw"></div>
+    <button class="primary" id="startGo">Covalo!</button>
+    <button class="ghost" id="startCancel" hidden>Annulla</button>
+  </div>
+</div>
+
+<!-- Aiuto -->
+<dialog id="help">
+  <form method="dialog" class="dlg">
+    <h2>Come si gioca</h2>
+    <p>Il tuo TamaPixel vive in <b>tempo reale</b>: mangia, gioca, fa la cacca e dorme… anche quando l'app è chiusa. Prenditene cura!</p>
+    <h3>Comandi</h3>
+    <p>Tocca un'icona sullo schermo per usarla. Oppure fai come con l'originale: <b>A</b> scorre le icone, <b>B</b> conferma, <b>C</b> annulla.</p>
+    <div class="legend" id="legend"></div>
+    <h3>Crescita</h3>
+    <p>Uovo → Pallino (dopo 1 minuto) → Antennino (dopo 1 ora) → Ciuffetto (dopo 1 giorno) → adulto (dopo 3 giorni). Che adulto diventerà dipende da te: pochi errori e un po' di disciplina fanno la differenza!</p>
+    <h3>Il campanello 🔔</h3>
+    <p>Quando si accende ha bisogno di te: fame, noia, malattia o luce da spegnere. Se lo ignori per 15 minuti è un <b>errore di cura</b>. Se ti chiama ma non gli manca niente… sono capricci: sgridalo!</p>
+    <h3>La nanna</h3>
+    <p>La sera va a dormire (Antennino alle 20, Ciuffetto alle 21, da adulto alle 22) e si sveglia al mattino. Ricordati di spegnere la luce.</p>
+    <h3>Attenzione</h3>
+    <p>Troppi dolci fanno venire il mal di pancia, la cacca lasciata lì fa ammalare, e se resta troppo a lungo affamato o malato… torna sul suo pianeta. 🪐</p>
+    <h3 id="installHelp">Mettilo sull'iPhone</h3>
+    <p>Apri questa pagina con <b>Safari</b>, tocca <b>Condividi</b> (il quadrato con la freccia) e scegli <b>Aggiungi alla schermata Home</b>. Si aprirà a tutto schermo come una vera app.</p>
+    <div class="end"><button class="primary">Ho capito!</button></div>
+  </form>
+</dialog>
+
+<!-- Impostazioni -->
+<dialog id="settings">
+  <form method="dialog" class="dlg">
+    <h2>Impostazioni</h2>
+    <div class="row"><span>Nome</span><input class="field" id="renameIn" type="text" maxlength="8" autocomplete="off"></div>
+    <div class="row"><span>Colore</span><div class="swatches" id="setSw"></div></div>
+    <label class="row"><span>Suoni</span><input type="checkbox" class="switch" id="soundIn" switch></label>
+    <div class="row col">
+      <span>Velocità del tempo</span>
+      <div class="seg" id="speedSeg">
+        <button type="button" data-speed="1">Normale</button>
+        <button type="button" data-speed="10">×10</button>
+        <button type="button" data-speed="60">×60</button>
+      </div>
+      <p class="note">Per vederlo crescere più in fretta. Vale solo mentre l'app è aperta: da chiusa il tempo scorre normale.</p>
+    </div>
+    <button type="button" class="danger" id="resetBtn">Ricomincia con un nuovo uovo</button>
+    <div class="end"><button class="primary">Fatto</button></div>
+  </form>
+</dialog>
+
+<script>
+'use strict';
+
+/* =====================================================================
+   1. UTILITÀ
+   ===================================================================== */
+const $ = s => document.querySelector(s);
+const rnd = (a, b) => a + Math.random() * (b - a);
+const hearts = v => Math.max(0, Math.ceil(v / 25 - 1e-6));          // 0..100  ->  0..4 cuori
+const joinIt = a => a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' e ' + a[a.length - 1];
+
+// Uno sprite è disegnato con "#" = pixel acceso e "." = spento
+function bmp(rows) {
+  const w = Math.max(...rows.map(r => r.length));
+  return { w, h: rows.length, d: rows.map(r => Array.from(r, c => c === '#')) };
+}
+const edit = (rows, ch) => rows.map((r, i) => ch[i] !== undefined ? ch[i] : r);
+
+/* =====================================================================
+   2. GRAFICA: sprite, personaggi, icone e font
+   ===================================================================== */
+const EGG = [
+  '................', '................', '......####......', '.....#....#.....',
+  '....#......#....', '....#.##...#....', '...#..##....#...', '...#........#...',
+  '...#....##..#...', '...#....##..#...', '...#........#...', '...#.##.....#...',
+  '....#.##...#....', '....#......#....', '.....######.....', '................'];
+
+const SPR = {
+  egg:  bmp(EGG),
+  egg1: bmp(edit(EGG, { 7: '...#..#.#...#...' })),
+  egg2: bmp(edit(EGG, { 7: '...##.#.#.#.#...', 8: '...#.#.#.#.##...' })),
+  poop: bmp(['...#...', '..#.#..', '..###..', '.#...#.', '.#####.', '#.....#', '#######']),
+  stinkA: bmp(['.#...#.']),
+  stinkB: bmp(['#...#..']),
+  burger: [
+    bmp(['..####..', '.######.', '########', '#.#.#.#.', '########', '.######.']),
+    bmp(['..###...', '.####...', '#####...', '#.#.#...', '######..', '.######.']),
+    bmp(['........', '........', '###.....', '#.#.....', '###.....', '.##.....']),
+    bmp(['........', '........', '........', '........', '#.......', '.#..#...']),
+  ],
+  ice: [
+    bmp(['..###..', '.#####.', '#######', '#######', '#.#.#.#', '.#####.', '..###..', '...#...']),
+    bmp(['.......', '..#....', '####...', '#######', '#.#.#.#', '.#####.', '..###..', '...#...']),
+    bmp(['.......', '.......', '.......', '.......', '.......', '.#####.', '..###..', '...#...']),
+    bmp(['.......', '.......', '.......', '.......', '.......', '.......', '..#.#..', '...#...']),
+  ],
+  heart:  bmp(['.##.##.', '#######', '#######', '.#####.', '..###..', '...#...']),
+  heartE: bmp(['.##.##.', '#..#..#', '#.....#', '.#...#.', '..#.#..', '...#...']),
+  heartS: bmp(['##.##', '#####', '.###.', '..#..']),
+  skull:  bmp(['.#####.', '#######', '#..#..#', '#######', '.##.##.', '.#####.', '..#.#..']),
+  anger:  bmp(['.#.#.', '##.##', '.....', '##.##', '.#.#.']),
+  zBig:   bmp(['#####', '...#.', '..#..', '.#...', '#####']),
+  zSmall: bmp(['####', '..#.', '.#..', '####']),
+  spark:  bmp(['..#..', '..#..', '##.##', '..#..', '..#..']),
+  sparkS: bmp(['.#.', '#.#', '.#.']),
+  syringe: bmp(['...#######.#', '####.#.#.###', '...#######.#']),
+  quest:  bmp(['.##.', '#..#', '..#.', '.#..', '....', '.#..']),
+  arrow:  bmp(['..#..', '.#...', '#####', '.#...', '..#..']),
+};
+
+// I personaggi: corpo disegnato a mano + faccia (occhi e bocca) aggiunta dal codice
+const CHARS = {
+  baby: { label: 'Pallino', eyes: [[5, 8], [10, 8]], mouth: [7, 11], fdy: [0, 0], frames: [
+    ['................', '................', '................', '.......#........', '........#.......', '......####......', '....##....##....', '...#........#...',
+     '..#..........#..', '..#..........#..', '..#..........#..', '..#..........#..', '..#..........#..', '...#........#...', '....########....', '................'],
+    ['................', '................', '................', '................', '.......#........', '........#.......', '......####......', '....##....##....',
+     '...#........#...', '..#..........#..', '..#..........#..', '..#..........#..', '..#..........#..', '.#............#.', '..############..', '................'],
+  ]},
+  child: { label: 'Antennino', eyes: [[5, 7], [10, 7]], mouth: [7, 9], fdy: [0, 0], frames: [
+    ['................', '................', '...#........#...', '....#......#....', '.....######.....', '....#......#....', '...#........#...', '..#..........#..',
+     '..#..........#..', '..#..........#..', '..#..........#..', '...#........#...', '....########....', '....#......#....', '...##......##...', '................'],
+    ['................', '................', '...#........#...', '....#......#....', '.....######.....', '....#......#....', '...#........#...', '..#..........#..',
+     '..#..........#..', '..#..........#..', '..#..........#..', '...#........#...', '....########....', '.....#....#.....', '.....##..##.....', '................'],
+  ]},
+  teen: { label: 'Ciuffetto', eyes: [[5, 5], [10, 5]], mouth: [7, 8], fdy: [0, 0], frames: [
+    ['......#..#......', '.......##.......', '.....######.....', '....#......#....', '...#........#...', '...#........#...', '...#........#...', '...#........#...',
+     '...#........#...', '.#.#........#.#.', '..##........##..', '...#........#...', '....#......#....', '.....######.....', '.....#....#.....', '....##....##....'],
+    ['......#..#......', '.......##.......', '.....######.....', '....#......#....', '...#........#...', '...#........#...', '...#........#...', '...#........#...',
+     '.#.#........#.#.', '..##........##..', '...#........#...', '...#........#...', '....#......#....', '.....######.....', '.....#....#.....', '....##....##....'],
+  ]},
+  stellino: { label: 'Stellino', eyes: [[5, 5], [10, 5]], mouth: [7, 7], fdy: [0, 0], frames: [
+    ['..#..........#..', '..##........##..', '..#.########.#..', '..#..........#..', '.#............#.', '.#............#.', '.#............#.', '.#............#.',
+     '.#............#.', '..#..........#..', '...##########...', '..##........##..', '...#........#...', '...#........#...', '....########....', '....##....##....'],
+    ['..#..........#..', '..##........##..', '..#.########.#..', '..#..........#..', '.#............#.', '.#............#.', '.#............#.', '.#............#.',
+     '.#............#.', '..#..........#..', '...##########...', '...#........#...', '..##........##..', '...#........#...', '....########....', '.....##..##.....'],
+  ]},
+  ciccio: { label: 'Cicciotto', eyes: [[5, 7], [10, 7]], mouth: [7, 10], fdy: [0, 0], frames: [
+    ['................', '.......##.......', '........#.......', '.....######.....', '...##......##...', '..#..........#..', '.#............#.', '.#............#.',
+     '#..............#', '#..#........#..#', '#..............#', '#..............#', '.#............#.', '..#..........#..', '...##########...', '...##......##...'],
+    ['................', '......##........', '........#.......', '.....######.....', '...##......##...', '..#..........#..', '.#............#.', '.#............#.',
+     '#..............#', '#..#........#..#', '#..............#', '#..............#', '.#............#.', '..#..........#..', '...##########...', '....##....##....'],
+  ]},
+  monello: { label: 'Diavoletto', eyes: [[5, 5], [10, 5]], mouth: [7, 7], fdy: [0, 0], eye: 'angry', mo: 'grin', frames: [
+    ['.#............#.', '.##..........##.', '..##.######.##..', '...#........#...', '..#..........#..', '..#..........#..', '..#..........#..', '..#..........#..',
+     '...#........#...', '....########....', '....#......#.##.', '....#......#..#.', '....#......#.#..', '....#......##...', '.....######.....', '.....#....#.....'],
+    ['.#............#.', '.##..........##.', '..##.######.##..', '...#........#...', '..#..........#..', '..#..........#..', '..#..........#..', '..#..........#..',
+     '...#........#...', '....########....', '....#......#....', '....#......#.##.', '....#......#..#.', '....#......###..', '.....######.....', '....#......#....'],
+  ]},
+  angel: { label: 'Angioletto', eyes: [[6, 5], [9, 5]], mouth: [7, 8], fdy: [0], frames: [
+    ['.....######.....', '................', '......####......', '.....#....#.....', '....#......#....', '....#......#....', '##..#......#..##', '#.#.#......#.#.#',
+     '.#.##......##.#.', '..#.#......#.#..', '....#......#....', '....#......#....', '....#.#..#.#....', '....##.##.##....', '................', '................'],
+  ]},
+};
+for (const c of Object.values(CHARS)) c.frames = c.frames.map(bmp);
+
+const ADULT_NOTE = {
+  stellino: 'Lo hai cresciuto benissimo 🌟',
+  ciccio: 'Un tipo tranquillo e paciocco 🙂',
+  monello: 'Un po\' monello… forse serviva più disciplina 😈',
+};
+
+// Espressioni: coordinate dei pixel relative alla posizione dell'occhio / della bocca
+const EYE = {
+  open: [[0, 0], [0, 1]], closed: [[-1, 1], [0, 1], [1, 1]], happy: [[-1, 1], [0, 0], [1, 1]],
+  sad: [[0, 1], [1, -1]], angry: [[-1, -1], [0, 0], [0, 1]], dead: [[-1, -1], [1, -1], [0, 0], [-1, 1], [1, 1]],
+  lookL: [[-1, 0], [-1, 1]], lookR: [[1, 0], [1, 1]],
+};
+const MOUTH = {
+  smile: [[-1, 0], [2, 0], [0, 1], [1, 1]], neutral: [[0, 0], [1, 0]], grin: [[-1, 0], [0, 0], [1, 0], [2, 0], [0, 1], [1, 1]],
+  open: [[0, 0], [1, 0], [0, 1], [1, 1]], frown: [[0, 0], [1, 0], [-1, 1], [2, 1]], wavy: [[-1, 1], [0, 0], [1, 1], [2, 0]],
+};
+
+// Le 8 icone intorno allo schermo, come sul Tamagotchi originale
+const ICONS = [
+  ['.#.#.#...#.', '.#.#.#..##.', '.#.#.#..##.', '.#####..##.', '..###...##.', '...#....##.', '...#.....#.', '...#.....#.', '...#.....#.', '...#.....#.', '...#.....#.'],
+  ['...#####...', '..#.....#..', '.#.......#.', '.#.......#.', '.#..#.#..#.', '..#..#..#..', '...#.#.#...', '...#####...', '...#####...', '....###....', '...........'],
+  ['...........', '...........', '..#######..', '.#.......#.', '#..#...#..#', '#.###.#.#.#', '#..#...#..#', '#...###...#', '.#.#...#.#.', '..#.....#..', '...........'],
+  ['...........', '..#######..', '.#.......#.', '#....#....#', '#....#....#', '#..#####..#', '#....#....#', '#....#....#', '.#.......#.', '..#######..', '...........'],
+  ['...........', '...###.....', '..#...#....', '..#.#.#....', '####..#....', '...#..#####', '..#.......#', '..#......#.', '...#....#..', '....####...', '.#.#.#.#.#.'],
+  ['...........', '........##.', '........##.', '.....##.##.', '.....##.##.', '..##.##.##.', '..##.##.##.', '..##.##.##.', '..##.##.##.', '.##########', '...........'],
+  ['...........', '.#########.', '#....#....#', '#....#....#', '#....#....#', '#.........#', '#....#....#', '.#########.', '..##.......', '..#........', '...........'],
+  ['.....#.....', '....###....', '...#...#...', '..#.....#..', '..#.....#..', '..#.....#..', '.#.......#.', '###########', '...........', '....###....', '...........'],
+].map(bmp);
+const ICON_INFO = [
+  ['Pappa', '🍔', 'un pasto o un dolcetto'],
+  ['Luce', '💡', 'accendi o spegni la luce'],
+  ['Gioco', '🎮', 'indovina dove guarderà'],
+  ['Cura', '💊', 'la medicina quando sta male'],
+  ['Bagno', '🦆', 'pulisci la cacca'],
+  ['Stato', '📊', 'età, peso, fame, felicità'],
+  ['Sgrida', '💢', 'quando fa i capricci'],
+  ['Chiamata', '🔔', 'si accende quando ha bisogno'],
+];
+
+// Font 3x5 per scrivere sullo schermo LCD
+const FONT = Object.fromEntries(Object.entries({
+  A: '.#.|#.#|###|#.#|#.#', B: '##.|#.#|##.|#.#|##.', C: '.##|#..|#..|#..|.##', D: '##.|#.#|#.#|#.#|##.',
+  E: '###|#..|##.|#..|###', F: '###|#..|##.|#..|#..', G: '.##|#..|#.#|#.#|.##', H: '#.#|#.#|###|#.#|#.#',
+  I: '###|.#.|.#.|.#.|###', J: '..#|..#|..#|#.#|.#.', K: '#.#|#.#|##.|#.#|#.#', L: '#..|#..|#..|#..|###',
+  M: '#.#|###|###|#.#|#.#', N: '##.|#.#|#.#|#.#|#.#', O: '.#.|#.#|#.#|#.#|.#.', P: '##.|#.#|##.|#..|#..',
+  Q: '.#.|#.#|#.#|##.|.##', R: '##.|#.#|##.|#.#|#.#', S: '.##|#..|.#.|..#|##.', T: '###|.#.|.#.|.#.|.#.',
+  U: '#.#|#.#|#.#|#.#|###', V: '#.#|#.#|#.#|#.#|.#.', W: '#.#|#.#|###|###|#.#', X: '#.#|#.#|.#.|#.#|#.#',
+  Y: '#.#|#.#|.#.|.#.|.#.', Z: '###|..#|.#.|#..|###',
+  0: '###|#.#|#.#|#.#|###', 1: '.#.|##.|.#.|.#.|###', 2: '##.|..#|.#.|#..|###', 3: '##.|..#|.#.|..#|##.',
+  4: '#.#|#.#|###|..#|..#', 5: '###|#..|##.|..#|##.', 6: '.##|#..|###|#.#|###', 7: '###|..#|.#.|.#.|.#.',
+  8: '###|#.#|###|#.#|###', 9: '###|#.#|###|..#|##.',
+  ' ': '...|...|...|...|...', '!': '.#.|.#.|.#.|...|.#.', '?': '##.|..#|.#.|...|.#.', '.': '...|...|...|...|.#.',
+  ':': '...|.#.|...|.#.|...', '-': '...|...|###|...|...', '/': '..#|..#|.#.|#..|#..', '>': '#..|.#.|..#|.#.|#..',
+}).map(([k, v]) => [k, bmp(v.split('|'))]));
+
+/* =====================================================================
+   3. SCHERMO LCD (una griglia di 32 x 16 pixel, come l'originale)
+   ===================================================================== */
+const MW = 32, MH = 16;
+const B = new Uint8Array(MW * MH);            // la "memoria video": 1 = pixel acceso
+const cls = () => B.fill(0);
+function dot(x, y) { if (x >= 0 && x < MW && y >= 0 && y < MH) B[y * MW + x] = 1; }
+function blit(s, x, y, flip = false) {
+  for (let j = 0; j < s.h; j++) {
+    const r = s.d[j];
+    for (let i = 0; i < r.length; i++) if (r[i]) dot(x + (flip ? s.w - 1 - i : i), y + j);
+  }
+}
+const clean = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
+const textW = s => clean(s).length * 4 - 1;
+function text(s, x, y) { for (const ch of clean(s)) { blit(FONT[ch] || FONT[' '], x, y); x += 4; } }
+const ctext = (s, y) => text(s, Math.floor((MW - textW(s)) / 2), y);
+const rtext = (s, y) => text(s, MW - 1 - textW(s), y);
+
+function drawChar(id, x, y, o = {}) {
+  const c = CHARS[id], k = (o.frame || 0) % c.frames.length, dy = c.fdy[k] || 0;
+  const eye = o.eye || c.eye || 'open', mouth = o.mouth || c.mo || 'smile';
+  if (!o.onlyEyes) blit(c.frames[k], x, y, o.flip);
+  const fixed = eye === 'lookL' || eye === 'lookR';
+  c.eyes.forEach(([ex, ey], n) => {
+    const m = n === 1 && !fixed ? -1 : 1;                       // l'occhio destro è speculare
+    for (const [px, py] of EYE[eye]) dot(x + ex + px * m, y + ey + dy + py);
+  });
+  if (o.onlyEyes) return;
+  const sh = eye === 'lookL' ? -1 : eye === 'lookR' ? 1 : 0;
+  for (const [px, py] of MOUTH[mouth]) dot(x + c.mouth[0] + px + sh, y + c.mouth[1] + dy + py);
+}
+
+// Disegno vero e proprio sul canvas (con l'ombra dei pixel, come un vero LCD)
+const cv = $('#lcd'), g = cv.getContext('2d');
+const UW = 33.2, UH = 25.8, PAD = 0.6, ROW = 3.6, GAP = 0.7;   // misure in "pixel LCD"
+const INK = '#26301d', GHOST = 'rgba(38,48,29,.07)', SHADOW = 'rgba(38,48,29,.2)', ICON_OFF = 'rgba(38,48,29,.13)';
+let U = 8, lcdBg = '#c4cda3';
+
+function fit() {
+  const w = cv.clientWidth; if (!w) return;
+  const dpr = Math.min(3, window.devicePixelRatio || 1);
+  const W = Math.round(w * dpr), H = Math.round(w * dpr * UH / UW);
+  if (W === cv.width && H === cv.height && typeof lcdBg !== 'string') return;   // niente da cambiare
+  cv.width = W; cv.height = H;
+  U = W / UW;
+  lcdBg = g.createLinearGradient(0, 0, 0, H);
+  lcdBg.addColorStop(0, '#cfd7b0'); lcdBg.addColorStop(1, '#b6c093');
+  render(performance.now());                                   // ridisegna subito, niente schermo vuoto
+}
+
+function present(inv, icons) {
+  g.fillStyle = lcdBg; g.fillRect(0, 0, cv.width, cv.height);
+  const ox = PAD * U, oy = (PAD + ROW + GAP) * U;
+  const gap = Math.max(1, Math.round(U * 0.13)), sh = Math.max(1, Math.round(U * 0.11));
+  const X = i => Math.round(ox + i * U), Y = j => Math.round(oy + j * U);
+  const flip = inv ? 1 : 0;
+  for (let pass = 0; pass < 3; pass++) {
+    g.fillStyle = pass === 0 ? GHOST : pass === 1 ? SHADOW : INK;
+    for (let j = 0; j < MH; j++) for (let i = 0; i < MW; i++) {
+      if (pass > 0 && !(B[j * MW + i] ^ flip)) continue;
+      const x = X(i), y = Y(j), w = X(i + 1) - x - gap, h = Y(j + 1) - y - gap;
+      if (pass === 1) g.fillRect(x + sh, y + sh, w, h); else g.fillRect(x, y, w, h);
+    }
+  }
+  for (let k = 0; k < 8; k++) drawIcon(k, icons[k]);
+}
+
+function drawIcon(k, on) {
+  const ic = ICONS[k], ip = U * 0.3, size = 11 * ip;
+  const cx = (PAD + (k % 4 + 0.5) * 8) * U;
+  const y0 = (k < 4 ? PAD : PAD + ROW + GAP + 16 + GAP) * U + (ROW * U - size) / 2;
+  const x0 = cx - size / 2;
+  const paint = o => {
+    for (let j = 0; j < 11; j++) for (let i = 0; i < 11; i++) {
+      if (!ic.d[j][i]) continue;
+      const x = Math.round(x0 + i * ip + o), y = Math.round(y0 + j * ip + o);
+      g.fillRect(x, y, Math.round(x0 + (i + 1) * ip + o) - x, Math.round(y0 + (j + 1) * ip + o) - y);
+    }
+  };
+  if (on) { g.fillStyle = SHADOW; paint(Math.max(1, U * 0.1)); }
+  g.fillStyle = on ? INK : ICON_OFF; paint(0);
+}
+
+// Disegna uno sprite su un piccolo canvas (per l'aiuto e la schermata iniziale)
+function paintMini(canvas, sprite, scale) {
+  const c = canvas.getContext('2d'), pad = 2;
+  canvas.width = (sprite.w + pad * 2) * scale; canvas.height = (sprite.h + pad * 2) * scale;
+  c.fillStyle = '#c4cda3'; c.fillRect(0, 0, canvas.width, canvas.height);
+  c.fillStyle = INK;
+  sprite.d.forEach((r, j) => r.forEach((on, i) => { if (on) c.fillRect((i + pad) * scale, (j + pad) * scale, scale, scale); }));
+}
+
+/* =====================================================================
+   4. SUONI (i "beep" del cicalino, generati al volo)
+   ===================================================================== */
+let AC = null;
+function unlockAudio() {
+  if (!settings.sound) return;
+  try {
+    if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
+    if (AC.state === 'suspended') AC.resume();
+  } catch (e) { AC = null; }
+}
+function tone(f, at, dur, vol = 0.05) {
+  if (!settings.sound || !AC || AC.state !== 'running') return;
+  const t = AC.currentTime + at, o = AC.createOscillator(), v = AC.createGain();
+  o.type = 'square'; o.frequency.setValueAtTime(f, t);
+  v.gain.setValueAtTime(0.0001, t);
+  v.gain.exponentialRampToValueAtTime(vol, t + 0.008);
+  v.gain.setValueAtTime(vol, t + Math.max(0.01, dur - 0.02));
+  v.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(v); v.connect(AC.destination); o.start(t); o.stop(t + dur + 0.05);
+}
+const tune = (notes, vol) => { let t = 0; for (const [f, d] of notes) { if (f) tone(f, t, d * 0.9, vol); t += d; } };
+const SFX = {
+  click: () => tone(2200, 0, 0.03, 0.03),
+  ok: () => tune([[1568, 0.06], [2093, 0.09]]),
+  no: () => tune([[392, 0.12], [262, 0.2]]),
+  call: () => [0, 0.45, 0.9].forEach(t => { tone(2637, t, 0.08, 0.04); tone(2637, t + 0.13, 0.08, 0.04); }),
+  chomp: () => tone(330, 0, 0.06),
+  hatch: () => tune([[523, 0.12], [659, 0.12], [784, 0.12], [1047, 0.32]]),
+  evolve: () => tune([[784, 0.09], [988, 0.09], [1175, 0.09], [1568, 0.09], [0, 0.05], [1175, 0.09], [1568, 0.3]]),
+  win: () => tune([[1047, 0.1], [1319, 0.1], [1568, 0.1], [2093, 0.3]]),
+  lose: () => tune([[523, 0.15], [440, 0.15], [349, 0.3]]),
+  good: () => tune([[1568, 0.07], [2093, 0.1]]),
+  bad: () => tone(196, 0, 0.25),
+  flush: () => { for (let i = 0; i < 6; i++) tone(700 - i * 70, i * 0.07, 0.06, 0.03); },
+  heal: () => tune([[880, 0.08], [1175, 0.08], [1760, 0.16]]),
+  die: () => tune([[784, 0.3], [740, 0.3], [698, 0.3], [659, 0.7]], 0.04),
+  pat: () => tune([[1319, 0.06], [1760, 0.1]]),
+};
+
+/* =====================================================================
+   5. IL CUCCIOLO: stato, salvataggio e "simulazione della vita"
+   ===================================================================== */
+const PET_KEY = 'tamapixel.pet.v2', SET_KEY = 'tamapixel.settings.v1';
+const read = k => { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } };
+const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+
+const SHELLS = {
+  rosa: ['#ff9ccb', '#ef5d9c', '#b8346f'],
+  azzurro: ['#9ad8ff', '#4aa3f0', '#2563b8'],
+  menta: ['#a6f0cf', '#44c78f', '#1f8a5c'],
+  limone: ['#fff08a', '#ffc93d', '#d48a0f'],
+  viola: ['#d4b8ff', '#9a6cf2', '#5f37b8'],
+};
+let settings = Object.assign({ sound: true, speed: 1, shell: 'rosa' }, read(SET_KEY) || {});
+let pet = read(PET_KEY);
+if (!pet || pet.v !== 2) pet = null;
+const save = () => { if (pet) write(PET_KEY, pet); };
+const saveSettings = () => write(SET_KEY, settings);
+
+// Ritmi di vita per ogni fase (valori al minuto; 25 punti = 1 cuore)
+const HATCH_MIN = 1;
+const STAGES = {
+  baby:  { until: 60,       hunger: 4.0,  happy: 3.0, poop: [8, 16],   weight: 5,  sleep: null },
+  child: { until: 1440,     hunger: 1.0,  happy: 0.8, poop: [30, 60],  weight: 10, sleep: [20, 8] },
+  teen:  { until: 4320,     hunger: 0.7,  happy: 0.6, poop: [45, 90],  weight: 20, sleep: [21, 8] },
+  adult: { until: Infinity, hunger: 0.45, happy: 0.4, poop: [60, 120], weight: 30, sleep: [22, 9] },
+};
+const ORDER = ['baby', 'child', 'teen', 'adult'];
+
+function newPet(name) {
+  const now = Date.now();
+  return {
+    v: 2, name, born: now, last: now, age: 0, stage: 'egg', form: 'egg',
+    hunger: 50, happy: 50, discipline: 0, weight: 5, poops: 0, poopIn: 10,
+    sick: false, doses: 0, asleep: false, lightsOff: false,
+    calls: {}, whim: null, mistakes: 0, stageMistakes: 0, neglect: 0, snacks: [], dead: null,
+  };
+}
+
+let events = [];
+const emit = (type, data) => events.push({ type, data });
+
+function isBedtime(stage, ts) {
+  const s = STAGES[stage] && STAGES[stage].sleep;
+  if (!s) return false;
+  const d = new Date(ts), h = d.getHours() + d.getMinutes() / 60;
+  return h >= s[0] || h < s[1];
+}
+
+// Un "passo" di vita: dt = minuti trascorsi, ts = ora reale (per sapere se è notte)
+function step(dt, ts) {
+  const p = pet;
+  if (p.stage === 'dead') return;
+  p.age += dt;
+
+  if (p.stage === 'egg') {
+    if (p.age >= HATCH_MIN) { p.stage = 'baby'; p.form = 'baby'; p.poopIn = rnd(...STAGES.baby.poop); emit('hatch'); }
+    return;
+  }
+  if (p.age >= STAGES[p.stage].until) evolve();
+  const S = STAGES[p.stage];
+
+  // nanna: segue l'orologio vero
+  const bed = isBedtime(p.stage, ts);
+  if (bed && !p.asleep) { p.asleep = true; emit('sleep'); }
+  else if (!bed && p.asleep) { p.asleep = false; p.lightsOff = false; emit('wake'); }
+
+  if (!p.asleep) {
+    p.hunger = Math.max(0, p.hunger - S.hunger * dt);
+    p.happy = Math.max(0, p.happy - S.happy * dt);
+    p.poopIn -= dt;
+    if (p.poopIn <= 0) { if (p.poops < 4) { p.poops++; emit('poop'); } p.poopIn = rnd(...S.poop); }
+    if (!p.sick) {
+      const risk = 0.0015 * p.poops + (p.poops >= 4 ? 0.01 : 0) + (hearts(p.hunger) === 0 ? 0.004 : 0) + (p.weight - S.weight > 15 ? 0.002 : 0);
+      if (Math.random() < risk * dt) makeSick();
+    }
+    // trascuratezza: troppo a lungo affamato o malato...
+    const bad = (hearts(p.hunger) === 0 ? 1 : 0) + (p.sick ? 1 : 0);
+    p.neglect = bad ? p.neglect + dt * bad : Math.max(0, p.neglect - dt);
+    if (p.neglect >= 1440) { die(); return; }
+  }
+
+  // chiamate (il campanello): se ignorate per 15 minuti = errore di cura
+  const need = [];
+  if (p.asleep) { if (!p.lightsOff) need.push('light'); }
+  else {
+    if (hearts(p.hunger) === 0) need.push('hunger');
+    if (hearts(p.happy) === 0) need.push('happy');
+    if (p.sick) need.push('sick');
+  }
+  for (const k of Object.keys(p.calls)) if (!need.includes(k)) delete p.calls[k];
+  for (const k of need) {
+    let c = p.calls[k];
+    if (!c) { c = p.calls[k] = { t: 0, miss: false }; emit('call', k); }
+    c.t += dt;
+    if (!c.miss && c.t >= 15) { c.miss = true; p.mistakes++; p.stageMistakes++; emit('mistake', k); }
+  }
+
+  // capricci: ti chiama senza motivo (si educa con la sgridata)
+  if (p.whim) { p.whim.t += dt; if (p.whim.t >= 15 || p.asleep) p.whim = null; }
+  else if (!p.asleep && !need.length && (p.stage === 'child' || p.stage === 'teen') &&
+           Math.random() < dt * (1 - p.discipline / 125) / 120) {
+    p.whim = { t: 0 }; emit('call', 'whim');
+  }
+}
+
+function evolve() {
+  const p = pet, from = p.form, next = ORDER[ORDER.indexOf(p.stage) + 1];
+  p.weight += STAGES[next].weight - STAGES[p.stage].weight;
+  if (next === 'adult') {
+    const score = p.stageMistakes + (p.discipline < 50 ? 2 : 0);
+    p.form = score <= 2 ? 'stellino' : score <= 6 ? 'ciccio' : 'monello';
+  } else p.form = next;
+  if (next === 'child') p.stageMistakes = 0;
+  p.stage = next;
+  emit('evolve', { from, to: p.form });
+}
+
+function makeSick(silent) {
+  const p = pet;
+  p.sick = true;
+  p.doses = p.stage === 'baby' || p.stage === 'child' ? 1 : (Math.random() < 0.5 ? 1 : 2);
+  if (!silent) emit('sick');
+}
+
+function die() {
+  const p = pet, prev = p.form;
+  Object.assign(p, { stage: 'dead', form: 'angel', sick: false, poops: 0, calls: {}, whim: null, asleep: false, lightsOff: false, dead: { at: Date.now() } });
+  emit('die', prev);
+}
+
+// Recupera il tempo trascorso (anche ad app chiusa!) a blocchi di 1 minuto
+function advance(nowMs) {
+  const p = pet, away = nowMs - p.last;
+  if (away < 0) { p.last = nowMs; return false; }
+  if (away < 200) return false;
+  const live = away < 5000, speed = live ? settings.speed : 1;
+  let gap = Math.min(away, 14 * 864e5), t = nowMs - gap;
+  while (gap > 0 && p.stage !== 'dead') {
+    const d = Math.min(60000, gap);
+    t += d; gap -= d;
+    step(d / 60000 * speed, t);
+  }
+  p.last = nowMs;
+  return away > 120000;
+}
+
+/* =====================================================================
+   6. ANIMAZIONI (sequenze di "fotogrammi" con durata e suono)
+   ===================================================================== */
+const view = { mode: 'main', sel: -1, cursor: 0, page: 0, anim: null, queue: [], game: null, petX: 8, dir: 1, frame: 0 };
+const anim = (steps, done) => ({ steps, done });
+
+function startAnim(a) {
+  view.anim = Object.assign({}, a, { i: 0, t: performance.now() });
+  view.mode = 'anim';
+  if (a.steps[0].s) a.steps[0].s();
+}
+function queueAnim(a) { if (view.anim || view.game) view.queue.push(a); else startAnim(a); }
+function flushQueue() { if (!view.anim && !view.game && view.queue.length) startAnim(view.queue.shift()); }
+
+function tickAnim(now) {
+  const A = view.anim;
+  if (!A) return;
+  while (now - A.t >= A.steps[A.i].d) {
+    A.t += A.steps[A.i].d; A.i++;
+    if (A.i >= A.steps.length) {
+      view.anim = null; view.mode = 'main';
+      if (A.done) A.done();
+      flushQueue();
+      return;
+    }
+    if (A.steps[A.i].s) A.steps[A.i].s();
+  }
+}
+
+function animRefuse() {
+  const f = pet.form, st = [];
+  for (let k = 0; k < 6; k++) st.push({ d: 200, s: k === 0 ? SFX.no : null, f: () => {
+    drawChar(f, k % 2 ? 9 : 7, 0, { eye: k % 2 ? 'lookR' : 'lookL', mouth: 'frown' });
+    if (k % 2 === 0) blit(SPR.anger, 26, 1);
+  } });
+  return anim(st);
+}
+
+function animEat(food, done) {
+  const f = pet.form, st = [];
+  const put = k => { if (food[k]) blit(food[k], 3, 16 - food[k].h); };
+  for (let k = 0; k < 3; k++) {
+    st.push({ d: 360, s: SFX.chomp, f: () => { put(k); drawChar(f, 14, 0, { mouth: 'open' }); } });
+    st.push({ d: 360, f: () => { put(k + 1); drawChar(f, 14, 0, { mouth: 'neutral', frame: 1 }); } });
+  }
+  st.push({ d: 700, s: SFX.ok, f: () => { drawChar(f, 14, 0, { eye: 'happy', mouth: 'grin' }); blit(SPR.sparkS, 8, 3); blit(SPR.sparkS, 3, 9); } });
+  return anim(st, done);
+}
+
+function animHappy(done, sound = SFX.pat) {
+  const f = pet.form, st = [];
+  for (let k = 0; k < 4; k++) st.push({ d: 230, s: k === 0 ? sound : null, f: () => {
+    drawChar(f, 8, k % 2 ? 0 : -2, { eye: 'happy', mouth: 'grin' });
+    if (k % 2 === 0) { blit(SPR.heartS, 1, 1); blit(SPR.heartS, 26, 3); }
+    else { blit(SPR.sparkS, 3, 6); blit(SPR.sparkS, 27, 9); }
+  } });
+  return anim(st, done);
+}
+
+function animMedicine(cured, done) {
+  const f = pet.form, st = [];
+  [27, 23, 19, 16].forEach((x, k) => st.push({ d: 260, s: k === 3 ? SFX.heal : null, f: () => {
+    drawChar(f, 0, 0, k === 3 ? { eye: 'closed', mouth: 'frown' } : { eye: 'sad', mouth: 'wavy' });
+    blit(SPR.syringe, x, 7);
+  } }));
+  st.push({ d: 300, f: () => { drawChar(f, 0, 0, { eye: 'closed', mouth: 'neutral' }); blit(SPR.syringe, 21, 7); } });
+  st.push({ d: 900, f: () => {
+    drawChar(f, 4, 0, cured ? { eye: 'happy', mouth: 'grin' } : { eye: 'sad', mouth: 'neutral' });
+    if (cured) { blit(SPR.spark, 24, 2); blit(SPR.sparkS, 27, 10); }
+  } });
+  return anim(st, done);
+}
+
+function wipe(before, after, wx) {
+  cls(); before(); const prev = B.slice(); cls(); after();
+  for (let y = 0; y < MH; y++) {
+    for (let x = 0; x < Math.min(wx, MW); x++) B[y * MW + x] = prev[y * MW + x];
+    const w = wx + ((y >> 1) % 2);                                  // l'onda
+    for (let x = w; x < w + 2; x++) if (x >= 0 && x < MW) B[y * MW + x] = 1;
+  }
+}
+function animFlush(done) {
+  const f = pet.form, n = pet.poops, px = view.petX, st = [];
+  const before = () => { drawChar(f, px, 0); drawPoops(n, performance.now()); };
+  const after = () => drawChar(f, px, 0);
+  for (let x = 33; x >= -3; x -= 3) st.push({ d: 65, s: x === 33 ? SFX.flush : null, f: () => wipe(before, after, x) });
+  st.push({ d: 650, f: () => { drawChar(f, px, 0, { eye: 'happy', mouth: 'grin' }); blit(SPR.sparkS, px + 17 > 28 ? px - 4 : px + 17, 3); } });
+  return anim(st, done);
+}
+
+function animScold(whim, done) {
+  const f = pet.form, st = [];
+  for (let k = 0; k < 4; k++) st.push({ d: 280, s: k === 0 ? (whim ? SFX.ok : SFX.no) : null, f: () => {
+    drawChar(f, 8, 0, whim || k > 1 ? { eye: 'sad', mouth: 'frown' } : { eye: 'open', mouth: 'open' });
+    if (k % 2 === 0) blit(SPR.anger, 1, 1);
+  } });
+  return anim(st, done);
+}
+
+function animHatch() {
+  const st = [], egg = (s, x) => () => blit(s, x, 0), blank = () => {};
+  st.push({ d: 500, f: egg(SPR.egg, 8) });
+  [[SPR.egg, 7], [SPR.egg, 9], [SPR.egg1, 7], [SPR.egg1, 9], [SPR.egg1, 7], [SPR.egg1, 9]].forEach(([s, x]) => st.push({ d: 160, s: SFX.click, f: egg(s, x) }));
+  st.push({ d: 450, s: SFX.chomp, f: egg(SPR.egg2, 8) });
+  st.push({ d: 110, inv: true, f: blank }, { d: 110, f: blank }, { d: 110, inv: true, f: blank });
+  for (let k = 0; k < 4; k++) st.push({ d: 320, s: k === 0 ? SFX.hatch : null, f: () => {
+    drawChar('baby', 8, 0, { eye: 'happy', mouth: 'grin', frame: k % 2 });
+    if (k % 2 === 0) { blit(SPR.spark, 2, 2); blit(SPR.sparkS, 27, 8); } else { blit(SPR.sparkS, 3, 9); blit(SPR.spark, 26, 1); }
+  } });
+  return anim(st, () => say(`Si è schiuso! Benvenuto al mondo, ${pet.name}! 🐣`, 5000));
+}
+
+function animEvolve(from, to) {
+  const st = [], blank = () => {};
+  for (let k = 0; k < 6; k++) st.push({ d: 140, s: k === 0 ? SFX.evolve : null, inv: k % 2 === 1, f: () => drawChar(from, 8, 0) });
+  st.push({ d: 250, inv: true, f: blank });
+  for (let k = 0; k < 4; k++) st.push({ d: 140, inv: k % 2 === 0, f: () => drawChar(to, 8, 0) });
+  for (let k = 0; k < 4; k++) st.push({ d: 320, f: () => {
+    drawChar(to, 8, 0, { eye: 'happy', mouth: 'grin', frame: k % 2 });
+    blit(k % 2 ? SPR.sparkS : SPR.spark, 2, 2); blit(k % 2 ? SPR.spark : SPR.sparkS, 26, 8);
+  } });
+  return anim(st, () => say(ADULT_NOTE[to]
+    ? `${pet.name} è diventato adulto: è un ${CHARS[to].label}! ${ADULT_NOTE[to]}`
+    : `${pet.name} è cresciuto: ora è un ${CHARS[to].label}! ✨`, 6000));
+}
+
+function animDeath(prev) {
+  const st = [];
+  for (let k = 0; k < 6; k++) st.push({ d: 260, s: k === 0 ? SFX.die : null, inv: k % 2 === 1, f: () => drawChar(prev, 8, 0, { eye: 'dead', mouth: 'frown' }) });
+  for (let y = 16; y >= 0; y -= 2) st.push({ d: 130, f: () => drawChar('angel', 8, y) });
+  return anim(st, () => say(`${pet.name} è tornato sul suo pianeta 🪐`, 6000));
+}
+
+/* =====================================================================
+   7. LE SCENE SULLO SCHERMO
+   ===================================================================== */
+const SLOTS = [[24, 8], [24, 0], [16, 8], [16, 0]];          // dove compare la cacca
+function drawPoops(n, now) {
+  const s = Math.floor(now / 500) % 2;
+  for (let i = 0; i < n; i++) { const [x, y] = SLOTS[i]; blit(s ? SPR.stinkA : SPR.stinkB, x, y); blit(SPR.poop, x, y + 1); }
+}
+function maxX() {
+  const p = pet;
+  let m = p.poops === 0 ? 16 : p.poops <= 2 ? 8 : 0;
+  if (p.sick) m -= 8;
+  return Math.max(0, m);
+}
+function drawZ(x, now) {
+  const k = Math.floor(now / 700) % 3, zx = x <= 8 ? x + 16 : x - 9;
+  blit(SPR.zSmall, zx, 11);
+  if (k >= 1) blit(SPR.zSmall, zx + 2, 6);
+  if (k >= 2) blit(SPR.zBig, zx + 3, 0);
+}
+
+function drawMain(now) {
+  const p = pet, x = view.petX;
+  if (p.stage === 'dead') { drawChar('angel', 8, Math.floor(now / 700) % 2); return false; }
+  if (p.stage === 'egg') { blit(SPR.egg, 8 + [0, 0, 0, 1, 0, -1][Math.floor(now / 250) % 6], 0); return false; }
+  if (p.lightsOff) {                                   // al buio si vedono solo gli occhi (o le Z)
+    if (p.asleep) drawZ(x, now); else drawChar(p.form, x, 0, { onlyEyes: true });
+    return true;
+  }
+  if (p.asleep) { drawChar(p.form, x, 0, { eye: 'closed', mouth: 'neutral' }); drawPoops(p.poops, now); drawZ(x, now); return false; }
+  const mood = p.sick ? { eye: 'sad', mouth: 'wavy' }
+    : (hearts(p.hunger) === 0 || hearts(p.happy) === 0) ? { eye: 'sad', mouth: 'frown' } : {};
+  drawChar(p.form, x, 0, Object.assign({ frame: view.frame, flip: view.dir < 0 }, mood));
+  drawPoops(p.poops, now);
+  if (p.sick && view.frame && p.poops < 4) blit(SPR.skull, x + 16, 1);
+  return false;
+}
+
+function drawFood() {
+  text('PAPPA', 4, 2); text('DOLCE', 4, 9);
+  text('>', 0, view.cursor ? 9 : 2);
+  blit(SPR.burger[0], 24, 1); blit(SPR.ice[0], 25, 8);
+}
+
+function drawStatus() {
+  const p = pet;
+  const heartsRow = n => { for (let i = 0; i < 4; i++) blit(i < n ? SPR.heart : SPR.heartE, i * 8, 9); };
+  if (view.page === 0) { text('ETA', 1, 2); rtext(String(Math.floor(p.age / 1440)), 2); text('PESO', 1, 9); rtext(Math.round(p.weight) + 'G', 9); }
+  else if (view.page === 1) { text('FAME', 1, 1); heartsRow(hearts(p.hunger)); }
+  else if (view.page === 2) { text('FELICE', 1, 1); heartsRow(hearts(p.happy)); }
+  else {
+    text('DISCIPL', 1, 1);
+    for (let x = 1; x <= 30; x++) { dot(x, 9); dot(x, 14); }
+    for (let y = 9; y <= 14; y++) { dot(1, y); dot(30, y); }
+    const n = Math.round(p.discipline / 25);
+    for (let k = 0; k < n; k++) for (let x = 3 + k * 7; x < 8 + k * 7; x++) { dot(x, 11); dot(x, 12); }
+  }
+}
+
+function drawGame(now) {
+  const G = view.game, f = pet.form, fr = Math.floor(now / 500) % 2;
+  if (G.phase === 'ask') {
+    drawChar(f, 8, 0, { frame: fr });
+    if (fr) { blit(SPR.quest, 1, 3); blit(SPR.quest, 27, 3); }
+  } else if (G.phase === 'look' || G.phase === 'result') {
+    const L = G.dir === 'L', face = G.phase === 'look' ? { eye: L ? 'lookL' : 'lookR', mouth: 'neutral' }
+      : G.ok ? { eye: 'happy', mouth: 'grin' } : { eye: 'sad', mouth: 'frown' };
+    drawChar(f, L ? 6 : 10, 0, face);
+    blit(SPR.arrow, L ? 0 : 27, 6, !L);
+    if (G.phase === 'result' && G.ok) blit(SPR.heartS, L ? 26 : 1, 1);
+  } else {
+    ctext(G.wins >= 3 ? 'VINTO!' : 'PERSO', 2);
+    ctext(`${G.wins}-${5 - G.wins}`, 9);
+  }
+}
+
+function render(now) {
+  cls();
+  let inv = false;
+  if (!pet) blit(SPR.egg, 8, 0);
+  else if (view.mode === 'anim' && view.anim) { const s = view.anim.steps[view.anim.i]; s.f(); inv = !!s.inv; }
+  else if (view.mode === 'food') drawFood();
+  else if (view.mode === 'status') drawStatus();
+  else if (view.mode === 'game' && view.game) drawGame(now);
+  else inv = drawMain(now);
+
+  const icons = Array(8).fill(false);
+  const sel = view.mode === 'food' ? 0 : view.mode === 'status' ? 5 : view.mode === 'game' ? 2 : view.sel;
+  if (sel >= 0) icons[sel] = true;
+  if (needsAttention()) icons[7] = true;
+  present(inv, icons);
+}
+
+function needsAttention() {
+  return !!pet && pet.stage !== 'dead' && pet.stage !== 'egg' && (Object.keys(pet.calls).length > 0 || !!pet.whim);
+}
+
+// Ogni mezzo secondo il cucciolo cammina un po' avanti e indietro
+function idleStep() {
+  view.frame ^= 1;
+  if (!pet) return;
+  const mx = maxX();
+  if (view.mode === 'main' && !pet.asleep && !pet.lightsOff && pet.stage !== 'egg' && pet.stage !== 'dead' && Math.random() < 0.55) {
+    if (Math.random() < 0.25) view.dir *= -1;
+    view.petX += view.dir * (Math.random() < 0.5 ? 1 : 2);
+  }
+  if (view.petX <= 0) { view.petX = 0; view.dir = 1; }
+  if (view.petX >= mx) { view.petX = mx; view.dir = -1; }
+}
+
+/* =====================================================================
+   8. AZIONI (cosa succede premendo tasti e icone)
+   ===================================================================== */
+function press(b) {
+  if (!pet || view.mode === 'anim') return;
+  if (pet.stage === 'dead') { if (b === 'B') openStart(true); else SFX.click(); return; }
+  SFX.click();
+  if (view.mode === 'main') {
+    if (b === 'A') { view.sel = (view.sel + 1) % 7; const [n, e, d] = ICON_INFO[view.sel]; say(`${e} ${n}: ${d}. Premi B per usarla.`, 3500); }
+    else if (b === 'B') { if (view.sel >= 0) activate(view.sel); else pat(); }
+    else view.sel = -1;
+  } else if (view.mode === 'food') {
+    if (b === 'A') view.cursor ^= 1; else if (b === 'B') eat(view.cursor); else view.mode = 'main';
+  } else if (view.mode === 'status') {
+    if (b === 'C') view.mode = 'main'; else view.page = (view.page + 1) % 4;
+  } else if (view.mode === 'game') {
+    if (b === 'C') endGame(true); else guess(b === 'A' ? 'L' : 'R');
+  }
+}
+
+function tapIcon(i) {
+  if (!pet || view.mode === 'anim' || pet.stage === 'dead') return;
+  SFX.click();
+  if (i === 7) { say(callText() || 'Il campanello si accende quando ha bisogno di te 🔔'); return; }
+  if (view.mode === 'game') return;
+  view.mode = 'main'; view.sel = i;
+  activate(i);
+}
+
+function tapScreen(fx, fy) {
+  if (!pet || view.mode === 'anim') return;
+  if (pet.stage === 'dead') { openStart(true); return; }
+  if (view.mode === 'food') { SFX.click(); view.cursor = fy < 0.5 ? 0 : 1; eat(view.cursor); }
+  else if (view.mode === 'status') { SFX.click(); view.page = (view.page + 1) % 4; }
+  else if (view.mode === 'game') { SFX.click(); guess(fx < 0.5 ? 'L' : 'R'); }
+  else pat();
+}
+
+function activate(i) {
+  const p = pet;
+  if (p.stage === 'egg') { SFX.no(); return say('È ancora un uovo: aspetta che si schiuda 🥚'); }
+  if (i === 1) return toggleLight();
+  if (i === 5) { view.mode = 'status'; view.page = 0; return; }
+  if (p.asleep) { SFX.no(); return say('Shh! Sta dormendo 😴'); }
+  if (p.lightsOff) { SFX.no(); return say('È buio pesto! Prima accendi la luce 💡'); }
+  if (i === 0) { view.mode = 'food'; view.cursor = 0; }
+  else if (i === 2) startGame();
+  else if (i === 3) giveMedicine();
+  else if (i === 4) startAnim(animFlush(() => { const had = pet.poops; pet.poops = 0; say(had ? 'Tutto pulito! ✨' : 'Era già pulito, ma un bagnetto fa sempre bene 🦆'); save(); }));
+  else if (i === 6) scold();
+}
+
+function pat() {
+  const p = pet;
+  if (p.stage === 'egg') { SFX.click(); return say('Toc toc… c\'è qualcuno? 🥚'); }
+  if (p.asleep) return say('Shh… sta dormendo 😴');
+  if (p.lightsOff) return say('È buio! Accendi la luce 💡');
+  startAnim(animHappy(null));
+  say(p.sick ? 'Le coccole aiutano, ma serve la medicina 💊' : 'Coccole! 💕');
+}
+
+function eat(k) {
+  const p = pet;
+  view.mode = 'main';
+  if (k === 0) {
+    if (hearts(p.hunger) >= 4) { startAnim(animRefuse()); return say('È pieno! Non ne vuole più 🙅'); }
+    startAnim(animEat(SPR.burger, () => {
+      p.hunger = Math.min(100, hearts(p.hunger) * 25 + 25); p.weight += 1;
+      say('Gnam! Che buono 🍔'); save();
+    }));
+  } else {
+    startAnim(animEat(SPR.ice, () => {
+      p.happy = Math.min(100, hearts(p.happy) * 25 + 25); p.weight += 2;
+      p.snacks = (p.snacks || []).filter(a => p.age - a < 60);
+      p.snacks.push(p.age);
+      if (p.snacks.length >= 4 && !p.sick) { makeSick(true); say('Troppi dolci… mal di pancia! 🤢', 5000); }
+      else say('Mmm, gelato! 🍦');
+      save();
+    }));
+  }
+}
+
+function toggleLight() {
+  const p = pet;
+  p.lightsOff = !p.lightsOff;
+  SFX.ok();
+  if (p.lightsOff) say(p.asleep ? 'Luce spenta. Buonanotte! 🌙' : 'Luce spenta… ma non ha sonno! 👀');
+  else say(p.asleep ? 'Ehi, così lo svegli! Lascia la luce spenta 😴' : 'Luce accesa ☀️');
+  save();
+}
+
+function giveMedicine() {
+  const p = pet;
+  if (!p.sick) { startAnim(animRefuse()); return say('Non è malato: niente medicine! 🙅'); }
+  p.doses = Math.max(0, (p.doses || 1) - 1);
+  const cured = p.doses === 0;
+  startAnim(animMedicine(cured, () => {
+    if (cured) { p.sick = false; say('Guarito! 💪'); } else say('Ancora una dose, per favore 💊');
+    save();
+  }));
+}
+
+function scold() {
+  const p = pet, whim = !!p.whim;
+  if (whim) { p.whim = null; p.discipline = Math.min(100, p.discipline + 25); }
+  else p.happy = Math.max(0, p.happy - 25);
+  startAnim(animScold(whim, () => say(whim ? 'Ha capito la lezione! Disciplina +1 👍' : 'Ma non aveva fatto niente… ora è triste 😢', 4000)));
+  save();
+}
+
+// Il gioco: indovina se guarderà a sinistra o a destra (5 round, ne servono 3)
+function startGame() {
+  if (pet.sick) { startAnim(animRefuse()); return say('Sta male, non ha voglia di giocare 🤒'); }
+  view.mode = 'game';
+  view.game = { round: 1, wins: 0, phase: 'ask', t: performance.now() };
+  say('Round 1 di 5: da che parte guarderà? A = sinistra, B = destra', 60000);
+}
+function guess(d) {
+  const G = view.game;
+  if (!G || G.phase !== 'ask') return;
+  G.guess = d; G.dir = Math.random() < 0.5 ? 'L' : 'R';
+  G.phase = 'look'; G.t = performance.now();
+}
+function tickGame(now) {
+  const G = view.game;
+  if (!G) return;
+  const el = now - G.t;
+  if (G.phase === 'look' && el > 600) {
+    G.ok = G.guess === G.dir;
+    if (G.ok) { G.wins++; SFX.good(); } else SFX.bad();
+    G.phase = 'result'; G.t = now;
+    say(`${G.ok ? 'Indovinato!' : 'Sbagliato!'} Punti: ${G.wins} su ${G.round}`, 60000);
+  } else if (G.phase === 'result' && el > 900) {
+    if (G.round >= 5) { G.phase = 'end'; G.t = now; (G.wins >= 3 ? SFX.win : SFX.lose)(); }
+    else { G.round++; G.phase = 'ask'; G.t = now; say(`Round ${G.round} di 5: da che parte guarderà?`, 60000); }
+  } else if (G.phase === 'end' && el > 1700) endGame(false);
+}
+function endGame(quit) {
+  const G = view.game, p = pet;
+  view.game = null; view.mode = 'main';
+  if (!G || !p || p.stage === 'dead') return;
+  if (quit) { say('Partita annullata'); flushQueue(); return; }
+  p.weight = Math.max(1, p.weight - 1);
+  if (G.wins >= 3) {
+    p.happy = Math.min(100, hearts(p.happy) * 25 + 25);
+    say(`Ha vinto ${G.wins} a ${5 - G.wins}! Che felicità 💖`, 4000);
+    startAnim(animHappy(null, null));
+  } else say(`Ha perso ${G.wins} a ${5 - G.wins}… riprova! 🎮`, 4000);
+  save();
+  flushQueue();
+}
+
+/* =====================================================================
+   9. MESSAGGI NEL FUMETTO
+   ===================================================================== */
+const msg = { text: '', until: 0 };
+function say(t, ms = 3000) { msg.text = t; msg.until = Date.now() + ms; hud(); }
+
+const CALL_TEXT = { hunger: 'ha fame 🍔', happy: 'si annoia 🎮', sick: 'sta male 💊', light: 'dorme con la luce accesa 💡', whim: 'fa i capricci 💢' };
+function callText() {
+  const ks = Object.keys(pet.calls);
+  if (pet.whim) ks.push('whim');
+  return ks.length ? `🔔 Ti chiama perché ${joinIt(ks.map(k => CALL_TEXT[k]))}` : '';
+}
+
+const IDLE = ['Sta benone! ♪', 'È di buon umore 😊', 'Si guarda intorno curioso 👀', 'Canticchia qualcosa ♫', 'Tutto tranquillo 🌈'];
+function statusText() {
+  const p = pet;
+  if (p.stage === 'dead') return `${p.name} è tornato sul suo pianeta 🪐 Premi B per un nuovo uovo.`;
+  if (view.mode === 'food') return 'A per scegliere, B per confermare, C per tornare indietro.';
+  if (view.mode === 'status') return 'A o B: pagina successiva · C: esci';
+  if (view.mode === 'game') return 'A = sinistra, B = destra (o tocca un lato dello schermo).';
+  if (p.stage === 'egg') return 'L\'uovo si muove… sta per schiudersi! 🥚';
+  if (p.asleep) return p.lightsOff ? 'Zzz… sogni d\'oro 🌙' : 'Si è addormentato: spegni la luce 💡';
+  if (p.lightsOff) return 'È buio pesto! Riaccendi la luce 💡';
+  if (p.sick) return 'Sta male 🤒 Dagli la medicina (a volte ne serve più di una).';
+  if (hearts(p.hunger) === 0) return 'Ha una fame da lupi! 🍔';
+  if (hearts(p.happy) === 0) return 'È triste… giocate un po\' insieme 🎮';
+  if (p.poops) return p.poops > 1 ? 'Quanta cacca! Usa il bagno 🦆' : 'Ha fatto la cacca 💩 Usa il bagno 🦆';
+  if (p.whim) return 'Ti chiama, ma non gli manca niente… capricci? Sgridalo 💢';
+  if (hearts(p.hunger) === 1) return 'Gli brontola la pancia… 🍔';
+  if (hearts(p.happy) === 1) return 'Si sta annoiando un po\' 🎮';
+  return IDLE[Math.floor(Date.now() / 20000) % IDLE.length];
+}
+
+function fmtDur(m) {
+  m = Math.floor(m);
+  if (m < 60) return `${m} min`;
+  if (m < 1440) return `${Math.floor(m / 60)} h ${m % 60} min`;
+  const d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60);
+  return `${d} ${d === 1 ? 'giorno' : 'giorni'}${h ? ` e ${h} h` : ''}`;
+}
+
+function hud() {
+  if (!pet) return;
+  const p = pet, yrs = Math.floor(p.age / 1440);
+  $('#petName').textContent = p.name;
+  $('#petInfo').textContent = p.stage === 'dead' ? `ha vissuto ${fmtDur(p.age)}`
+    : p.stage === 'egg' ? 'Uovo'
+    : `${CHARS[p.form].label} · ${yrs} ${yrs === 1 ? 'anno' : 'anni'} · ${Math.round(p.weight)} g`;
+  $('#say').textContent = Date.now() < msg.until ? msg.text : statusText();
+  $('#speedTag').textContent = settings.speed > 1 ? `⏩ ×${settings.speed}` : '';
+}
+
+// Gestisce ciò che è successo durante la simulazione
+function handleEvents(away) {
+  if (!events.length) return;
+  const ev = events; events = [];
+  const of = t => ev.filter(e => e.type === t);
+
+  const dead = of('die')[0];
+  if (dead) {
+    view.game = null; view.queue = []; view.anim = null; view.mode = 'main';
+    startAnim(animDeath(dead.data)); save();
+    return;
+  }
+  const grow = ev.filter(e => e.type === 'hatch' || e.type === 'evolve');
+  if (away) {
+    // riassunto di cosa è successo mentre l'app era chiusa
+    const parts = [], np = of('poop').length, nm = of('mistake').length;
+    if (of('hatch').length) parts.push('è uscito dall\'uovo');
+    if (of('evolve').length) parts.push(`è cresciuto (ora è un ${CHARS[pet.form].label})`);
+    if (np) parts.push(np === 1 ? 'ha fatto la cacca' : `ha fatto la cacca ${np} volte`);
+    if (of('sick').length) parts.push('si è ammalato');
+    if (nm) parts.push(nm === 1 ? 'ti ha chiamato senza risposta' : `ti ha chiamato ${nm} volte senza risposta`);
+    const summary = () => say(parts.length ? `Mentre eri via ${pet.name} ${joinIt(parts)}.` : `Bentornato! ${pet.name} ti aspettava 👋`, 8000);
+    if (grow.length) {                                    // mostra solo l'ultima trasformazione
+      const last = grow[grow.length - 1];
+      const evo = of('evolve');
+      const a = evo.length ? animEvolve(evo[0].data.from === 'egg' ? 'baby' : evo[0].data.from, last.data ? last.data.to : pet.form) : animHatch();
+      a.done = summary;
+      queueAnim(a);
+    } else summary();
+    return;
+  }
+  for (const e of grow) queueAnim(e.type === 'hatch' ? animHatch() : animEvolve(e.data.from, e.data.to));
+  const call = of('call').pop();
+  if (call) SFX.call(); else if (of('poop').length) SFX.click();
+  if (of('hatch').length || of('evolve').length) return;     // il messaggio lo dà l'animazione
+  if (view.game) return;
+  if (of('sick').length) say('Si è ammalato! 🤒 Usa la cura', 5000);
+  else if (of('sleep').length) say('Sbadiglio… è ora di nanna 😴 Spegni la luce', 6000);
+  else if (of('wake').length) say('Buongiorno! ☀️ Si è svegliato', 5000);
+  else if (call) say(`🔔 Ti chiama: ${CALL_TEXT[call.data]}`, 5000);
+  else if (of('poop').length) say('Oops… ha fatto la cacca 💩', 4000);
+}
+
+/* =====================================================================
+   10. FINESTRE: nuovo uovo, aiuto, impostazioni
+   ===================================================================== */
+function applyShell() {
+  const c = SHELLS[settings.shell] || SHELLS.rosa, r = document.documentElement.style;
+  r.setProperty('--shell-1', c[0]); r.setProperty('--shell-2', c[1]); r.setProperty('--shell-3', c[2]);
+}
+function fillSwatches(box) {
+  box.innerHTML = '';
+  for (const [name, c] of Object.entries(SHELLS)) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'sw'; b.title = name; b.setAttribute('aria-label', `Guscio ${name}`);
+    b.style.background = `linear-gradient(160deg, ${c[0]}, ${c[2]})`;
+    b.setAttribute('aria-pressed', String(settings.shell === name));
+    b.onclick = () => {
+      settings.shell = name; saveSettings(); applyShell();
+      box.querySelectorAll('.sw').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    };
+    box.appendChild(b);
+  }
+}
+
+function openStart(canCancel) {
+  $('#nameIn').value = '';
+  $('#startCancel').hidden = !canCancel;
+  fillSwatches($('#startSw'));
+  $('#start').hidden = false;
+}
+function startNew() {
+  const name = ($('#nameIn').value.trim() || 'Pixel').slice(0, 8);
+  pet = newPet(name); events = [];
+  Object.assign(view, { mode: 'main', sel: -1, cursor: 0, page: 0, anim: null, queue: [], game: null, petX: 8, dir: 1 });
+  save();
+  $('#start').hidden = true;
+  say(`Ecco l'uovo di ${name}! Tienilo d'occhio… 🥚`, 6000);
+}
+
+function buildHelp() {
+  const box = $('#legend');
+  ICON_INFO.forEach(([n, , d], k) => {
+    const c = document.createElement('canvas');
+    paintMini(c, ICONS[k], 4);
+    const t = document.createElement('div');
+    t.innerHTML = `<b>${n}</b><span>${d}</span>`;
+    box.append(c, t);
+  });
+}
+
+function openSettings() {
+  $('#renameIn').value = pet ? pet.name : '';
+  $('#renameIn').disabled = !pet;
+  $('#soundIn').checked = settings.sound;
+  fillSwatches($('#setSw'));
+  document.querySelectorAll('#speedSeg button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.speed === settings.speed)));
+  $('#settings').showModal();
+}
+
+/* =====================================================================
+   11. AVVIO E CICLO PRINCIPALE
+   ===================================================================== */
+// tasti fisici A / B / C
+document.querySelectorAll('.hw').forEach(el => {
+  el.addEventListener('pointerdown', e => { e.preventDefault(); unlockAudio(); el.classList.add('down'); press(el.dataset.btn); });
+  const up = () => el.classList.remove('down');
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(t => el.addEventListener(t, up));
+});
+
+// tocchi sullo schermo: icone in alto/in basso, oppure la scena al centro
+cv.addEventListener('pointerdown', e => {
+  e.preventDefault(); unlockAudio();
+  const r = cv.getBoundingClientRect();
+  const ux = (e.clientX - r.left) / r.width * UW, uy = (e.clientY - r.top) / r.height * UH;
+  const col = Math.max(0, Math.min(3, Math.floor((ux - PAD) / 8)));
+  if (uy < PAD + ROW + GAP / 2) tapIcon(col);
+  else if (uy > PAD + ROW + GAP + 16 + GAP / 2) tapIcon(4 + col);
+  else tapScreen((ux - PAD) / 32, (uy - PAD - ROW - GAP) / 16);
+});
+
+// tastiera (comoda sul computer): A / B / C, frecce, Invio, Esc
+document.addEventListener('keydown', e => {
+  if (e.target.closest('input') || document.querySelector('dialog[open]') || !$('#start').hidden) return;
+  const k = { a: 'A', arrowleft: 'A', b: 'B', enter: 'B', arrowright: 'B', ' ': 'B', c: 'C', escape: 'C', backspace: 'C' }[e.key.toLowerCase()];
+  if (!k) return;
+  e.preventDefault(); unlockAudio();
+  const el = document.querySelector(`.hw[data-btn="${k}"]`);
+  el.classList.add('down'); setTimeout(() => el.classList.remove('down'), 120);
+  press(k);
+});
+
+['pointerdown', 'touchend', 'click'].forEach(t => document.addEventListener(t, unlockAudio, { capture: true, passive: true }));
+document.addEventListener('gesturestart', e => e.preventDefault());
+document.addEventListener('dblclick', e => e.preventDefault());
+
+$('#startGo').onclick = startNew;
+$('#nameIn').addEventListener('keydown', e => { if (e.key === 'Enter') startNew(); });
+$('#startCancel').onclick = () => { $('#start').hidden = true; };
+$('#helpBtn').onclick = () => { $('#help').showModal(); $('#help .dlg').scrollTop = 0; };
+$('#installBtn').onclick = () => { $('#help').showModal(); $('#installHelp').scrollIntoView(); };
+$('#setBtn').onclick = openSettings;
+$('#renameIn').addEventListener('change', e => { const v = e.target.value.trim().slice(0, 8); if (pet && v) { pet.name = v; save(); hud(); } });
+$('#soundIn').addEventListener('change', e => { settings.sound = e.target.checked; saveSettings(); if (settings.sound) { unlockAudio(); SFX.ok(); } });
+document.querySelectorAll('#speedSeg button').forEach(b => b.onclick = () => {
+  settings.speed = +b.dataset.speed; saveSettings();
+  document.querySelectorAll('#speedSeg button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  hud();
+});
+$('#resetBtn').onclick = () => {
+  if (!pet || confirm(`Vuoi davvero ricominciare? ${pet.name} andrà perso per sempre.`)) { $('#settings').close(); openStart(!!pet); }
+};
+
+// iPhone: suggerisci l'installazione se l'app è aperta dentro Safari
+const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const standalone = navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
+$('#installBtn').hidden = !(isIOS && !standalone);
+
+applyShell();
+buildHelp();
+paintMini($('#eggArt'), SPR.egg, 6);
+fit();
+if ('ResizeObserver' in window) new ResizeObserver(fit).observe(cv); else addEventListener('resize', fit);
+if (!pet) openStart(false);
+
+let lastSim = 0, lastSave = 0, lastTick = -1;
+function loop() {
+  const now = performance.now();
+  if (pet && now - lastSim >= 1000) { lastSim = now; handleEvents(advance(Date.now())); }
+  if (pet && now - lastSave >= 4000) { lastSave = now; save(); }
+  tickAnim(now);
+  tickGame(now);
+  const tick = Math.floor(now / 500);
+  if (tick !== lastTick) { lastTick = tick; idleStep(); hud(); }
+  render(now);
+}
+document.addEventListener('visibilitychange', () => { if (document.hidden) save(); else { lastSim = 0; loop(); } });
+addEventListener('pagehide', save);
+setInterval(loop, 100);
+loop();
+
+// Funziona anche offline (solo quando la pagina è su https)
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+// Per curiosi: apri la console e scrivi "tama" per vedere lo stato
+window.tama = { get pet() { return pet; }, view, settings, step, advance, press, tapIcon };
+</script>
+</body>
+</html>
